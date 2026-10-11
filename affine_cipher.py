@@ -1,6 +1,8 @@
 import sys
 from math import gcd
 
+from histogram import plot_histogram
+
 ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
 P_ENG = {'A': .082, 'B': .015, 'C': .028, 'D': .043, 'E': .127, 'F': .022,
@@ -52,6 +54,7 @@ if sys.argv[1] == "encrypt":
     else:
         print("Ciphertext:", encrypt(sys.argv[4], a, b))
 elif sys.argv[1] == "decrypt":
+    plot_histogram(sys.argv[2])
     result = cryptanalysis(sys.argv[2].upper())
     if result:
         a, b, plaintext = result
