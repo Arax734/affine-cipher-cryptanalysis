@@ -12,7 +12,7 @@ def plot_histogram(ciphertext, filename="histogram.png", show=True):
 
     fig, ax = plt.subplots(figsize=(10, 5))
     bars = ax.bar(list(counts.keys()), list(counts.values()), color="steelblue")
-    ax.bar_label(bars, labels=[n if n else "" for n in counts.values()], fontsize=8)
+    ax.bar_label(bars, labels=[f"{n}\n{100 * n / total:.1f}%" if n else "" for n in counts.values()], fontsize=7)
     ax.set_title(f"Ciphertext letter frequency histogram (total letters: {total})")
     ax.set_xlabel("Letter")
     ax.set_ylabel("Occurrences")

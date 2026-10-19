@@ -30,21 +30,40 @@ def solve_system(x1, y1, x2, y2):
 def cryptanalysis(ciphertext, threshold=0.055):
     cipher_top = sorted(ALPHABET, key=lambda c: (-ciphertext.count(c), c))[:6]
     plain_top = sorted(ALPHABET, key=lambda c: -P_ENG[c])[:6]
+    print("Most frequent ciphertext letters:", cipher_top)
+    print("Most frequent English letters:   ", [p.lower() for p in plain_top])
 
+    failed = []
     for i in range(len(plain_top)):
         for j in range(i + 1, len(plain_top)):
+            p1, p2 = plain_top[i], plain_top[j]
             for c1 in cipher_top:
                 for c2 in cipher_top:
                     if c1 == c2:
                         continue
-                    for a, b in solve_system(ALPHABET.index(plain_top[i]), ALPHABET.index(c1),
-                                             ALPHABET.index(plain_top[j]), ALPHABET.index(c2)):
+                    x1, y1 = ALPHABET.index(p1), ALPHABET.index(c1)
+                    x2, y2 = ALPHABET.index(p2), ALPHABET.index(c2)
+                    hyp = f"{c1}={p1.lower()}, {c2}={p2.lower()}"
+                    # a*(x1-x2) = (y1-y2) mod 26, then b = y1 - a*x1 mod 26
+                    keys = solve_system(x1, y1, x2, y2)
+                    if not keys:
+                        print(f"{hyp}: a*{(x1 - x2) % 26} = {(y1 - y2) % 26} (mod 26) -> no solution")
+                        continue
+                    for a, b in keys:
                         if gcd(a, 26) != 1:
+                            print(f"{hyp}: (a, b) = ({a}, {b}) -> rejected, gcd({a}, 26) = {gcd(a, 26)}")
+                            failed.append((a, b, "gcd(a, 26) != 1"))
                             continue
                         plaintext = decrypt(ciphertext, a, b)
                         M = sum(P_ENG[c.upper()] for c in plaintext) / len(plaintext)
+                        print(f"{hyp}: (a, b) = ({a}, {b}) -> {plaintext[:40]}...  M = {M:.3f}")
                         if M >= threshold:
+                            print("\nFailed keys:", ", ".join(f"({fa}, {fb}) [{r}]" for fa, fb, r in failed) or "none")
+                            print(f"Chosen key: (a, b) = ({a}, {b}), a^-1 = {pow(a, -1, 26)}, "
+                                  f"M = {M:.3f} >= {threshold} (English text ~0.065, gibberish ~0.038)")
                             return a, b, plaintext
+                        failed.append((a, b, f"M = {M:.3f}"))
+    print("\nFailed keys:", ", ".join(f"({fa}, {fb}) [{r}]" for fa, fb, r in failed) or "none")
     return None
 
 if sys.argv[1] == "encrypt":
@@ -58,6 +77,7 @@ elif sys.argv[1] == "decrypt":
     result = cryptanalysis(sys.argv[2].upper())
     if result:
         a, b, plaintext = result
+        print(f"Key: a = {a}, b = {b}")
         print(f"Plaintext: {plaintext}")
     else:
         print("Key not found.")
